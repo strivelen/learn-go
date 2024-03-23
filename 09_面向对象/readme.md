@@ -149,5 +149,258 @@ a.test() // 0 返回的是Num的零值
 ```
 
 ```go
+// 定义 Person 结构体
+type Person struct {
+	Name string 
+}
+
+// 给Person结构体绑定方法test
+func (p Person) test() {
+	p.Name = "露露"
+	fmt.Println(p.Name) // 露露
+}
+
+func main () {
+	// 创建结构体实例
+	var p Person
+	p.Name = "丽丽"
+	p.test()
+	fmt.Println(p.Name) // 丽丽
+}
 ```
+
+注意：
+
+1. `test`  方法中参数名字随意起
+2. 结构体 `Person` 和 `test` 方法绑定，调用 `test` 方法必须靠指定的类型：`Person`
+3. 如果其它类型变量调用 `test` 方法一定会报错
+4. 结构体对象传入 `test` 方法中，值传递（和函数参数传递一致）
+
+##### 方法的注意事项
+
+1. 结构体类型是值类型，在方法调用中，遵守值类型的传递机制，是值拷贝方式
+
+   <img src="https://raw.githubusercontent.com/strivelen/strivelen/main/learn-go/images/image-20240323235521493.png" alt="image-20240323235521493" style="zoom:50%;" />
+
+2. 如果程序员希望在方法中改变结构体变量的值，可以通过结构体指针的方式处理
+
+   ```go
+   package main
+   import "fmt"
+   
+   type Person struct {
+     Name string
+   }
+   func (p *Person) test() {
+     (*p).Name = "露露"
+     fmt.Println(p.Name) // 露露
+   }
+   func main() {
+     var p Person
+     p.Name = "丽丽"
+     (&p).test()
+     fmt.Println(p.Name) // 露露
+   }
+   ```
+
+   <img src="https://raw.githubusercontent.com/strivelen/strivelen/main/learn-go/images/image-20240324000546432.png" alt="image-20240324000546432" style="zoom:33%;" />
+
+3. Golang 中的方法作用在指定的数据类型上的，和指定的数据类型绑定，因此自定义类型，都可以有方法，而不仅仅是 `struct` ，比如：`int`、`float32` 等都可以有方法。
+
+   ```go
+   package main
+   import "fmt"
+   
+   type integer int
+   
+   func (i integer) print() {
+     i = 30
+     fmt.Println("i = ", i)
+   }
+   
+   func (i *integer) change() {
+     *i = 30
+     fmt.Println("i = ", i) // 100
+   }
+   
+   func main() {
+     var i integer = 20
+     // i.print()
+     i.change()
+     fmt.Println(i) // 100  
+   }
+   ```
+
+4. 方法的访问范围控制的规则和函数一样：方法名首字母小写，只能在本包访问，方法首字母大写，可以在本包和其他包访问。
+
+5. 如果一个类实现了 `String()` 这个方法，那么 `fmt.Println()` 默认会调用这个变量的 `String()` 进行输出。
+
+   > 示例：[demo02.go](./demo02.go)
+
+   ```go
+   package main
+   import "fmt"
+   
+   type Student struct {
+     Name string
+     Age int
+   }
+   
+   func (s *Student) String() string {
+     str := fmt.Sprintf("Name = %v, Age = %v", s.Name, s.Age)
+     return str
+   }
+   
+   func main() {
+     stu := Student{
+       Name: "李四",
+       Age: 20,
+     }
+     // 传入地址，如果绑定了String方法就会自动调用
+     fmt.Println(&stu)
+   }
+   ```
+
+### 方法和函数的区别
+
+> 示例：[demo03.go](./demo03.go)
+
+1. 绑定指定类型
+
+   - 方法：需要绑定指定数据类型
+   - 函数：不需要绑定数据类型
+
+2. 调用方式不一样
+
+   函数的调用方式：函数名(实参列表)
+
+   方法的调用方式：变量.方法名(实参列表)
+
+   ```go
+   type Student struct {
+     Name string
+   }
+   
+   // 定义方法
+   func (s Student) method01() {
+   	fmt.Println(s.Name)
+   }
+   
+   // 定义函数
+   func func01(s Student) {
+   	fmt.Println(s.Name)
+   }
+   
+   func main() {
+   	// 创建结构体实例
+   	var s Student = Student{"张三"}
+   	// 调用方法
+   	s.method01()
+   	// 调用函数
+   	func01(s)
+   }
+   ```
+
+3. 对于函数来说，参数类型对应是什么就要传入什么
+
+   ```go
+   type Student struct {
+     Name string
+   }
+   
+   func func01(s Student) {
+   	fmt.Println(s.Name)
+   }
+   
+   func func02(s *Student) {
+   	fmt.Println((*s).Name)
+   }
+   
+   func main() {
+   	var s Student = Student{"张三"}
+   	func01(s) // 张三
+   	// func01(&s) // 错误
+   	func02(&s) // 张三
+   	// func02(s) // 错误
+   }
+   ```
+
+4. 对于方法来说，接收者为值类型，可以传入指针类型，接收者为指针类型，可以传入值类型
+
+   ```go
+   type Student struct {
+     Name string
+   }
+   
+   func (s Student) test01() {
+   	fmt.Println(s.Name)
+   }
+   
+   func (s *Student) test02() {
+   	fmt.Println((*s).Name)
+   }
+   
+   func main() {
+   	var s Student = Student{"丽丽"}
+   	s.test01()
+   	(&s).test01() // 虽然用指针类型调用，但是传递还是按照值传递的形式
+   
+   	(&s).test02()
+   	s.test02() // 等价
+   }
+   ```
+
+### 创建结构体实例时指定字段值
+
+> 示例：[demo04.go](./demo04.go)
+
+```go
+type Student struct {
+  Name string
+  Age int
+}
+func main() {
+  // 方式1：按照顺序赋值操作
+  var s1 Student = Student{"小李", 19} // 缺点：必须按照顺序有局限性
+  fmt.Println(s1)
+  
+  // 方式2：按照指定类型
+  var s2 Student = Student{
+    Name: "张三",
+    Age: 20,
+  }
+  fmt.Println(s2)
+  
+  // 方式3：想要返回结构体的指针类型
+  var s3 *Student = &Student{"明明", 18}
+  fmt.Println(*s3)
+  var s4 *Student = &Student{
+    Name: "李四",
+    Age: 29
+  }
+  fmt.Println(*s4)
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
