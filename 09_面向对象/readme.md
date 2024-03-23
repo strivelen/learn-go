@@ -129,26 +129,25 @@ func main() {
    }
    ```
 
-   ### 结构体中方法的引入
+### 结构体中方法的引入
 
-   [demo01.go]: demo01.go	"demo01.go"
+> 示例： [demo01.go](09_面向对象/demo01.go)
 
-   1. 方法是作用在指定的数据类型上，和指定的数据类型绑定，因此自定义类型，都可以有方法，而不仅仅是`struct`。
+1. 方法是作用在指定的数据类型上，和指定的数据类型绑定，因此自定义类型，都可以有方法，而不仅仅是`struct`。
+2. 方法的声明和调用格式
 
-   2. 方法的声明和调用格式。
+```go
+type A struct {
+  Num int
+}
+func (a A) test() {
+  fmt.Println(a.Num)
+}
+// 调用
+var a A
+a.test() // 0 返回的是Num的零值
+```
 
-      ```go
-      type A struct {
-        Num int
-      }
-      func (a A) test() {
-        fmt.Println(a.Num)
-      }
-      // 调用
-      var a A
-      a.test() // 0 返回的是Num的零值
-      ```
+```go
+```
 
-      
-
-   
