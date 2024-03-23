@@ -382,11 +382,136 @@ func main() {
 }
 ```
 
+### 跨包创建结构体实例
 
+> 示例：[demo05.go](./demo05.go)
 
+> 当结构体首字母小写，如果做到跨包访问？-- **工厂模式**
 
+```go
+// ./student/student.go
+package student
 
+type student struct {
+	Name string
+	Age int
+}
 
+// 工厂模式
+func NewStudent(n string, a int) *student {
+	return &student{n, a}
+}
+
+// ================================================
+
+// ./demo05.go
+package main
+
+import (
+	"fmt"
+	"example.com/student"
+)
+
+func main() {
+	s := student.NewStudent("张三", 20)
+	fmt.Println(*s) // {张三 20}
+	fmt.Println(s) //&{张三 20}
+}
+```
+
+### 封装
+
+> 示例：[demo06.go](./demo06.go)
+
+1. 什么是封装？
+
+   封装（encapsulation）就是把抽象出的字段和对字段的操作封装在一起，数据被保护在内部，程序的其它包只有通过被授权的操作方法，才能对字段进行操作。
+
+2. 封装的好处：
+
+   - 隐藏实现细节
+   - 提可以对数据进行验证，保证安全合理
+
+3. Golang 中如何实现封装：
+
+   - 建议将结构体、字段（属性）的首字母小写（其它包不能使用，类似 private，实际开发不小写也可能，因为封装没有那么严格）
+
+   - 给结构体所在包提供一个工厂模式的函数，首字母大写（类似一个构造函数）
+
+   - 提供一个首字母大写的 set 方法（类似其它语言的 public ），用于对属性判断并赋值
+
+     func (var 结构体类型名)SetXxx（参数里欸包）{
+
+     ​	// 加入数据验证的业务逻辑
+
+     ​	var.Age = 参数
+
+     }
+
+   - 提供一个首字母大写的Get方法（类似其它语言的public），用于获取属性值
+
+     func (var 结构体类型名) GetXxx() （返回值列表）{
+
+     ​	return var.字段
+
+     }
+
+   ```go
+   // person.go
+   package person
+   import "fmt"
+   
+   type person struct {
+   	Name string
+   	age int // 其他包不能直接访问
+   }
+   
+   // 定义工厂模式的函数，相当于构造器
+   func NewPerson(name string) *person {
+   	return &person{
+   		Name: name,
+   	}
+   }
+   
+   // 定义set和get函数，对age字段进行封装，因为在函数中可以加一系列的限制操作，确保被封装字段的安全合理性
+   func (p *person) SetAge(age int) {
+   	if age > 0 && age < 150 {
+   		p.age = age
+   	} else {
+   		fmt.Println("对不起，你传入的年龄范围不正确")
+   	}
+   }
+   
+   func (p *person) GetAge() int {
+   	return p.age
+   }
+   
+   // ====================================================
+   // demo06.go
+   package main
+   
+   import (
+   	"fmt"
+   	"example.com/person"
+   )
+   
+   func main() {
+   	p := person.NewPerson("李四")
+   	p.SetAge(180)
+   
+   	fmt.Println(p.Name) // 李四
+   	fmt.Println(p.GetAge()) // 18
+   	fmt.Println(*p) // {李四 18}
+   }
+   ```
+
+   
+
+   
+
+   
+
+​	
 
 
 
