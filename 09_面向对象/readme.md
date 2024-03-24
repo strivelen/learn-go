@@ -456,76 +456,197 @@ func main() {
 
      }
 
+```go
+// person.go
+package person
+import "fmt"
+
+type person struct {
+  Name string
+  age int // 其他包不能直接访问
+}
+
+// 定义工厂模式的函数，相当于构造器
+func NewPerson(name string) *person {
+  return &person{
+    Name: name,
+  }
+}
+
+// 定义set和get函数，对age字段进行封装，因为在函数中可以加一系列的限制操作，确保被封装字段的安全合理性
+func (p *person) SetAge(age int) {
+  if age > 0 && age < 150 {
+    p.age = age
+  } else {
+    fmt.Println("对不起，你传入的年龄范围不正确")
+  }
+}
+
+func (p *person) GetAge() int {
+  return p.age
+}
+
+// ====================================================
+// demo06.go
+package main
+
+import (
+  "fmt"
+  "example.com/person"
+)
+
+func main() {
+  p := person.NewPerson("李四")
+  p.SetAge(180)
+  
+  fmt.Println(p.Name) // 李四
+  fmt.Println(p.GetAge()) // 18
+  fmt.Println(*p) // {李四 18}
+}
+```
+
+### 继承
+
+> 示例：[demo07.go](./demo07.go)
+
+当多个结构体存在相同的属性（字段）和方法时，可以从这些结构体中抽象出结构体，在该结构体中定义这些相同的属性和方法，其它的结构体不需要重新定义这些属性和方法，只需嵌套一个匿名结构体即可。也就是说：在 Golang 中，如果一个 struct 嵌套了另一个匿名结构体，那么这个结构体可以直接访问匿名结构体的字段和方法，从而实现了继承特性。
+
+<img src="https://raw.githubusercontent.com/strivelen/strivelen/main/learn-go/images/image-20240324105801985.png" alt="image-20240324105801985" style="zoom:50%;" />
+
+```go
+// 定义动物结构体
+type Animal struct {
+  Age int
+  Weight float32
+}
+
+// 给 Animal 绑定方法：喊叫
+func (an *Animal) Shout() {
+  fmt.Println("我可以大声喊叫")
+}
+
+// 给 Animal 绑定方法：自我展示
+func (an *Animal) ShowInfo() {
+  fmt.Printf("动物的年龄是：%v，动物的体重是：%v \n", an.Age, an.Weight)
+}
+
+// 定义结构体 Cat
+type Cat struct {
+  // 为了复用性，体现继承思维，加入匿名结构体: 将Animal中的字段和方法都达到复用
+  Animal
+}
+
+// 对 Cat 绑定特有的方法：
+func (c *Cat) scratch() {
+  fmt.Println("我是小猫，我可以挠人")
+}
+
+func main() {
+  // 创建Cat结构体示例
+  cat := &Cat{}
+  cat.Animal.Age = 3
+  cat.Animal.Weight = 10.6
+  cat.Animal.Shout() // 我可以大声喊叫
+  cat.Animal.ShowInfo() // 动物的年龄是：3，动物的体重是：10.6 
+  cat.scratch() // 我是小猫，我可以挠人
+}
+```
+
+**继承的优点：提高代码的复用性、扩展性。**
+
+##### 继承的注意事项
+
+1. 结构体可以使用嵌套匿名结构体所有的字段和方法，即：首字母大写或者小写的字段、方法都可以使用。
+2. 匿名结构体字段访问可以简化。
+3. 当结构体和匿名结构体有相同的字段或者方法时，编译器采用就近访问原则访问，如希望访问匿名结构体的字段和方法，可以通过匿名结构体名来区分。
+
+4. Golang 中支持多继承：如一个结构体嵌套了多个匿名结构体，那么该结构体可以直接访问嵌套的匿名结构体的字段和方法，从而实现了多重继承。为了保证代码的简洁性，建议大家尽量不使用多重继承，很多语言就将多重继承去除了，但是Go中保留了。
+
+5. 如嵌入的匿名结构体有相同的字段名或者方法名，则在访问时，需要通过匿名结构体类型来区分。
+
    ```go
-   // person.go
-   package person
-   import "fmt"
-   
-   type person struct {
-   	Name string
-   	age int // 其他包不能直接访问
+   type A struct {
+     a int
+     b string
    }
-   
-   // 定义工厂模式的函数，相当于构造器
-   func NewPerson(name string) *person {
-   	return &person{
-   		Name: name,
-   	}
+   type B struct {
+     c int
+     d string
+     a int
    }
-   
-   // 定义set和get函数，对age字段进行封装，因为在函数中可以加一系列的限制操作，确保被封装字段的安全合理性
-   func (p *person) SetAge(age int) {
-   	if age > 0 && age < 150 {
-   		p.age = age
-   	} else {
-   		fmt.Println("对不起，你传入的年龄范围不正确")
-   	}
+   type c struct {
+     A
+     B
    }
-   
-   func (p *person) GetAge() int {
-   	return p.age
-   }
-   
-   // ====================================================
-   // demo06.go
-   package main
-   
-   import (
-   	"fmt"
-   	"example.com/person"
-   )
-   
    func main() {
-   	p := person.NewPerson("李四")
-   	p.SetAge(180)
-   
-   	fmt.Println(p.Name) // 李四
-   	fmt.Println(p.GetAge()) // 18
-   	fmt.Println(*p) // {李四 18}
+     c := C{
+       A{10, "aaa"}, 
+       B{20, "ccc", 50}
+     }
+     fmt.Println(c.b)
+     fmt.Println(c.d)
+     fmt.Println(c.A.a)
+     fmt.Println(c.B.a)
+   }
+   ```
+
+6. 结构体的匿名字段是基本数据类型。
+
+   ```go
+   type c struct {
+     A
+     B
+     int
+   }
+   c := C{
+     A{10, "aaa"},
+     B{20, "ccc", 50},
+     888
+   }
+   fmt.Println(c.int) // 888
+   ```
+
+7. 嵌套匿名结构体后，也可以在创建结构体变量（实例）时，直接指定各个匿名结构体字段的值。
+
+   ```go
+   c := C{
+     A{10, "aaa"},
+     B{20, "ccc", 50},
+     888
+   }
+   ```
+
+8. 嵌入匿名结构体的指针也是可以的。
+
+   ```go
+   type C1 struct {
+     *A
+     *B
+     int
+   }
+   c1 := C1{
+     &A{10, "aaa"},
+     &B{20, "ccc", 50},
+     888
+   }
+   fmt.Println(c1) // {地址 地址 888}
+   fmt.Println(*c1.A) // {10 aaa}
+   fmt.Println(*c1.B) // {20 ccc 50}
+   ```
+
+9. 结构体的字段可以是结构体类型的。（组合模式）
+
+   ```go
+   type D struct {
+     a int
+     b string
+     c B // c字段类型是结构体B类型，D 和 B 是组合模式，不是继承关系
+   }
+   func main() {
+     d := D{10, "ooo", B{66, "ppp", 999}}
+     fmt.Println(d) // {10 ooo {66 ppp 999}}
+     fmt.Println(d.c.d) // ppp
    }
    ```
 
    
-
-   
-
-   
-
-​	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
