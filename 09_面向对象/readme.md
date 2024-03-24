@@ -649,4 +649,309 @@ func main() {
    }
    ```
 
+### 接口
+
+> 示例：[demo08.go](./demo08.go)
+
+```go
+package main
+
+import "fmt"
+
+// 接口的定义：定义规则、定义规范、定义某种能力
+type SayHello interface {
+	// 声明没有实现的方法：
+	sayHello()
+}
+
+// 接口的实现：定义一个结构体
+// 中国人：
+type Chinese struct {
+
+}
+// 实现接口的方法 --> 具体的实现：
+func (person Chinese) sayHello() {
+	fmt.Println("你好")
+}
+
+// 接口的实现：定义一个结构体
+// 美国人：
+type American struct {
+
+}
+// 实现接口的方法 --> 具体的实现：
+func (person American) sayHello() {
+	fmt.Println("Hello")
+}
+
+// 定义一个函数：专门用来各国人打招呼的函数，接收具备 SayHello 接口的能力的变量
+func greet(s SayHello) {
+	s.sayHello()
+}
+
+func main() {
+	// 创建一个中国人：
+	c := Chinese{}
+	// 创建一个美国人
+	a := American{}
+
+	// 美国人打招呼
+	greet(a) // Hello
+	// 中国人打招呼
+	greet(c) // 你好
+}
+```
+
+##### 总结：
+
+1. 接口中可以定义一组方法，但不需要实现，不需要方法体。并且接口中不能包含任何变量。到某个自定义类型要使用的时候（实现接口的时候），再根据具体情况把这些方法具体实现出来。
+
+2. 实现接口要实现 **所有的方法** 才是实现。
+
+3. Golang 中的接口不需要显示的实现接口。Golang 中没有 `implement` 关键字。
+
+   （Golang 中实现接口是基于方法的，不是基于接口的）
+
+   例如：
+
+   A 接口 a, b 方法
+
+   B 接口 a, b 方法
+
+   C 结构体 实现了 a, b 方法，那么C实现了A接口，也可以说实现了B接口（只要实现全部方法即可，和实际接口耦合性很低，比Java松散的多）
+
+4. 接口的目的是为了定义规范，具体由别人来实现即可。
+
+##### 接口注意事项
+
+1. 接口本身不能创建实例，但是可以指向一个实现了该接口的自定义类型的变量。
+
+   ```go
+   var s SayHello // ❌ 错误  接口本身不能创建实例
+   s.sayHello()
    
+   var s SayHello = c // ✔ 正确 可以指向一个实现了该接口的自定义类型的变量
+   s.sayHello()
+   
+   ```
+
+2. 只要是自定义数据类型，就可以实现接口，不仅仅是结构体类型。
+
+   ```go
+   type integer int
+   func (i integer) sayHello() {
+     fmt.Println("say hi + ", i)
+   }
+   // 创建实例
+   var i integer = 10
+   var s SayHello = i
+   s.sayHello()
+   ```
+
+3. 一个自定义类型可以实现多个接口
+
+   ```go
+   type AInterface interface {
+     a()
+   }
+   type BInterface interface {
+     b()
+   }
+   type Stu struct {}
+   func (s Stu) a() {
+     fmt.Println("aaa")
+   }
+   func (s Stu) b() {
+     fmt.Println("bbb")
+   }
+   func main() {
+     var s Stu
+     var a AInterface = s
+     var b BInterface = s
+     a.a()
+     b.b()
+   }
+   ```
+
+4. 一个接口（比如A接口）可以继承多个别的接口（比如 B，C接口），这时如果要实现 A 接口，也必须将 B，C 接口的方法也全部实现。
+
+   ```go
+   type CInterface interface {
+     c()
+   }
+   type BInterface interface {
+     b()
+   }
+   type AInterface interface {
+     BInterface
+     CInterface
+     a()
+   }
+   type Stu struct {}
+   
+   func (s Stu) a() {
+     fmt.Println("a")
+   }
+   func (s Stu) b() {
+     fmt.Println("b")
+   }
+   func (s Stu) c() {
+     fmt.Println("c")
+   }
+   
+   func main() {
+     var s Stu
+     var a AInterface = s
+     a.a()
+     a.b()
+     a.c()
+   }
+   ```
+
+5. `interface` 类型默认是一个指针（引用类型），如果没有对 `interface` 初始化就使用，那么会输出 `nil`。
+
+6. 空接口没有任何方法，所以可以裂解为所有类型都实现了空接口，也可以理解为我们可以把任何一个变量赋值给空接口。
+
+   ```go
+   type E interface {}
+   func main() {
+     var num int = 10
+     var e E =  num
+     fmt.Println(e)
+   }
+   ```
+
+### 多态
+
+变量（实例）具有多种形态。面向对象的第三大特征，在Go语言，多态特征是通过接口来实现的。可以按照统一的接口来调用不同的实现。这时接口变量就呈现不同的形态。
+
+```go
+// 在 demo08.go 中 greet 函数就实现了多态
+func greet(s SayHello) { // s可以通过上下文来识别具体什么类型的实例，就体现多态
+  s.sayHello()
+}
+```
+
+接口体现多态特征：
+
+1. 多态参数
+
+   ```go
+   func greet (s SayHello) {} // s 就叫多态参数
+   ```
+
+2. 多态数组
+
+   比如：定义 `SayHello` 数组， 存放中国人结构体、美国人结构体
+
+   ```go
+   var arr [3]SayHello
+   arr[0] = American{"rose"}
+   arr[1] = Chinese{"张三"}
+   arr[2] = Chinese{"李四"}
+   fmt.Println(arr) // {{rose} {张三} {李四}}
+   ```
+
+### 断言
+
+> 示例：[demo09.go](./demo09.go)
+
+Go语言里面有一个语法，可以直接判断是否是该类型的变量：`value, ok = element.(T)`，这里 value 就是变量的值，ok是一个 bool 类型，element 是 interface 变量，T 是断言的类型。
+
+```go
+package main
+
+import "fmt"
+
+// 接口的定义：定义规则、定义规范、定义某种能力
+type SayHello interface {
+	// 声明没有实现的方法：
+	sayHello()
+}
+
+// 接口的实现：定义一个结构体
+// 中国人：
+type Chinese struct {
+
+}
+// 实现接口的方法 --> 具体的实现：
+func (person Chinese) sayHello() {
+	fmt.Println("你好")
+}
+func (person Chinese) niuYangGe() {
+	fmt.Println("东北文化-扭秧歌")
+}
+
+// 接口的实现：定义一个结构体
+// 美国人：
+type American struct {
+
+}
+// 实现接口的方法 --> 具体的实现：
+func (person American) sayHello() {
+	fmt.Println("Hello")
+}
+func (person American) disco() {
+	fmt.Println("disco")
+}
+
+// 定义一个函数：专门用来各国人打招呼的函数，接收具备 SayHello 接口的能力的变量
+func greet(s SayHello) {
+	s.sayHello()
+	// s.niuYangGe() // 报错：s.niuYangGe undefined (type SayHello has no field or method niuYangGe)
+	// 断言：
+	// ch, flag := s.(Chinese) // 判断s是否是Chinese类型并赋值给ch变量,flag代表是否是Chinese类型的boolean
+	// if flag {
+	// 	ch.niuYangGe()
+	// } else {
+	// 	fmt.Println("美国人不会扭秧歌")
+	// }
+
+	// 简洁语法
+	// if ch, flag := s.(Chinese); flag {
+	// 	ch.niuYangGe()
+	// } else {
+	// 	fmt.Println("美国人不会扭秧歌")
+	// }
+
+	switch s.(type) {
+		case Chinese:
+			ch := s.(Chinese)
+			ch.niuYangGe()
+		case American:
+			us := s.(American)
+			us.disco()
+	}
+	fmt.Println("打招呼...")
+}
+
+func main() {
+	// 创建一个中国人：
+	c := Chinese{}
+	// 中国人打招呼
+	greet(c)
+
+
+	// 创建一个美国人
+	// a := American{}
+	// 美国人打招呼
+	// greet(a)
+	
+}
+```
+
+Type Switch 的基本用法
+
+Type Switch 是 Go 语言中的一种特殊的 switch 语句，它比较的是类型而不是具体的值。它判断的某个接口变量的类型，然后根据具体类型再做相应处理。
+
+```go
+switch s.(type) {
+  case Chinese:
+		ch := s.(Chinese)
+		ch.niuYangGe()
+  case American:
+		us := s.(American)
+		us.disco()
+}
+```
+
