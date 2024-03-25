@@ -104,7 +104,7 @@ func main() {
    func main() {
    	var s Student = Student{10}
      var p Person = Person{10}
-     s = student(p)
+     s = Student(p)
      fmt.Println(s)
      fmt.Println(p)
    }
@@ -219,7 +219,7 @@ func main () {
    }
    
    func (i *integer) change() {
-     *i = 30
+     *i = 100
      fmt.Println("i = ", i) // 100
    }
    
