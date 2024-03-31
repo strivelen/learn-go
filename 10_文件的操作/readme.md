@@ -75,3 +75,9 @@ func main() {
 ```
 
 ##### 读取文件内容（带缓冲区）
+
+> 示例： [demo03.go](./demo03.go)
+
+读取文件的内容并显示在终端（带缓冲区的方式），适合读取比较大的文件，使用 `os.Open` 、`file.Close`、`bufio.NewReader()` 、`reader.ReadString()` 函数和方法。
+
+> 底层有一个默认的字节长度，默认是：4096
