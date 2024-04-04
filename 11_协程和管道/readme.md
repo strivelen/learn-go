@@ -198,7 +198,7 @@ func add() {
 }
 ```
 
-### 读写锁的引入
+### 读写锁
 
 > 示例： [demo06.go](./demo06.go)
 
@@ -215,3 +215,430 @@ golang中sync包实现了两种锁 `Mutex` （互斥锁）和 `RWMutex` （读�
    RWMutex是一个读写锁，其经常用于读次数远远对于写次数的场景
 
    --- 在读的时候，数据之间不会产生影响，写和读之间才会产生影响
+
+```go
+package main
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+// 加入读写锁
+var lock sync.RWMutex
+
+var wg sync.WaitGroup
+
+func read(){
+	defer wg.Done()
+	lock.RLock() // 如果只是读数据，那么这个锁不产生影响，但是读写同时发生的时候，就会产生影响
+	fmt.Println("开始读取数据")
+	time.Sleep(time.Second)
+	fmt.Println("读取成功")
+	lock.RUnlock()
+}
+
+func write() {
+	defer wg.Done()
+	lock.Lock()
+	fmt.Println("开始写入数据")
+	time.Sleep(time.Second)
+	fmt.Println("写入成功")
+	lock.Unlock()
+}
+
+
+func main() {
+	wg.Add(6)
+	// 开启协程 => 场合：读多写少
+	for i := 0; i < 5; i++ {
+		go read()
+	}
+	go write()
+
+	wg.Wait()
+}
+```
+
+### 管道 channel
+
+> 示例：[demo07.go](./demo07.go)
+
+**特质：**
+
+1. 管道本质就是一个数据结构-队列
+2. 数据是先进先出
+3. 自身线程安全，多协程访问时，不需要加锁，`channel` 本身就是线程安全的
+4. 管道有类型的，一个 `string` 的管道只能存放 `string` 类型数据
+
+**管道的定义：`var 变量名 chan 数据类型`**
+
+1. chan 管道关键字
+2. 数据类型指的是管道的类型，里面放入数据的类型，管道是有类型的，int类型的管道只能写入整数int
+3. 管道是引用类型，必须初始化才能写入数据，即 `make` 后才能使用
+
+```go
+package main
+import (
+	"fmt"
+)
+
+func main() {
+	// 定义管道、声明管道 => 定义一个int类型的管道
+	var intChan chan int
+	// 通过 make 初始化：管道可以存放3个int类型的管道
+	intChan = make(chan int, 3)
+
+	// 证明管道是引用类型
+	fmt.Printf("intChan 的值：%v \n", intChan) // intChan 的值：0xc00010a080
+
+	// 向管道存放数据：
+	intChan<- 10
+	num := 20
+	intChan<- num
+	intChan<- 40
+	// 注意：不能存放大于容量的数据：
+	// intChan<- 80
+
+	// 在管道中读取数据：
+	num1 := <-intChan
+	num2 := <-intChan
+	num3 := <-intChan
+	fmt.Println(num1, num2, num3)
+
+	// 注意：在没有使用协程的情况下，如果管道的数据已经全部取出，那么再取就会报错：
+	// num4 := <-intChan
+	// fmt.Println(num4)
+
+	// 输出管道的长度：
+	fmt.Printf("管道的实际长度：%v，管道的容量是：%v \n", len(intChan), cap(intChan))
+}
+```
+
+##### 管道的关闭
+
+> 示例：[demo08.go](./demo08.go)
+
+使用内置函数close可以关闭管道，当管道关闭后，就不能再向管道写数据了，但是仍然可以从该管道读取数据。
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	var intChan chan int
+	intChan = make(chan int, 3)
+	// 在管道中存放数据：
+	intChan<- 10
+	intChan<- 20
+
+	// 关闭管道
+	close(intChan)
+
+	// 再次写入数据
+	// intChan<- 30
+	// fmt.Println(intChan)
+
+	// 当管道关闭后，读取数据是可以的：
+	num := <- intChan
+	fmt.Println(num)
+}
+```
+
+##### 管道的遍历
+
+> 示例：[demo09.go](./demo09.go)
+
+管道支持 for-range 的方式进行遍历，请注意两个细节
+
+1. 在遍历时，如果管道没有关闭，则会出现deadlock的错误
+2. 在遍历时，如果管道已经关闭，则会正常遍历数据，遍历完后，就会退出遍历
+
+```go
+package main
+import (
+	"fmt"
+)
+
+func main() {
+	var intChan chan int
+	intChan = make(chan int, 100)
+
+	// 向管道存入数据
+	for i := 0; i < 100; i++ {
+		intChan<- i
+	}
+	// 在遍历前，如果没有关闭管道，就会出席那deadlock的错误
+	// 所以我们在遍历前要进行管道的关闭
+	close(intChan)
+	// 遍历：for-range
+	for v := range intChan {
+		fmt.Println("value =", v)
+	}
+}
+```
+
+##### 声明只读只写管道
+
+> 示例：[demo11.go](./demo11.go)
+
+管道可以声明为只读或只写性质
+
+```go
+package main
+import (
+	"fmt"
+)
+
+func main() {
+	// 默认情况下，管道时双向的 => 可读可写
+	// var intChan chan int
+	
+	// 声明为只写
+	var intChan2 chan<- int // 管道具备<- 只写性质
+	intChan2 = make(chan int, 3)
+	intChan2<- 20
+	// num := <- intChan2 // 报错
+	// fmt.Println("num: ", num)
+	fmt.Println("intChan2: ", intChan2)
+	
+	// 声明为只读
+	var intChan3 <-chan int // 管道具备<- 只读性质
+	if intChan3 != nil {
+		num1 := <- intChan3
+		fmt.Println("num1: ", num1)
+	}
+	// intChan3 <- 3 // 报错
+}
+```
+
+**注意：管道只读只写只是管道的性质，不是管道的类型**
+
+##### 管道的阻塞
+
+1. 当管道只写入数据，没有读取，就会出现阻塞：
+
+```go
+package main
+import (
+	"fmt"
+	"sync"
+	_"time"
+)
+
+var wg sync.WaitGroup
+
+// 写：
+func writeData(intChan chan int) {
+	defer wg.Done()
+	for i := 0; i < 10; i++ {
+		intChan<- i
+		fmt.Println("写入的数据为: ", i)
+		// time.Sleep(time.Second)
+	}
+
+	// 管道关闭
+	close(intChan)
+}
+
+// 读：
+func readData(intChan chan int) {
+	defer wg.Done()
+	// 遍历：
+	for v := range intChan {
+		fmt.Println("读取的数据为：", v)
+		// time.Sleep(time.Second)
+	}
+}
+
+func main() { // 主线程
+	// 写协程和读协程共同操作同一个管道
+	intChan := make(chan int, 10)
+
+	wg.Add(2)
+	// 开启读和写的协程
+	go writeData(intChan)
+	// go readData(intChan)
+
+	wg.Wait()
+}
+// 输出：
+// fatal error: all goroutines are asleep - deadlock! // 死锁
+// goroutine 1 [semacquire]:
+// sync.runtime_Semacquire(0xc000028070?)
+//         C:/Program Files/Go/src/runtime/sema.go:62 +0x25
+// sync.(*WaitGroup).Wait(0x7d4388?)
+//         C:/Program Files/Go/src/sync/waitgroup.go:116 +0x48
+// main.main()
+//         D:/Github/learn-go/11_协程和管道/demo12.go:42 +0x85
+// exit status 2
+```
+
+2. 写的快，读的慢（管道读写频率不一致），不会出现阻塞问题
+
+```go
+package main
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+var wg sync.WaitGroup
+
+// 写：
+func writeData(intChan chan int) {
+	defer wg.Done()
+	for i := 0; i < 10; i++ {
+		intChan<- i
+		fmt.Println("写入的数据为: ", i)
+		// time.Sleep(time.Second)
+	}
+
+	// 管道关闭
+	close(intChan)
+}
+
+// 读：
+func readData(intChan chan int) {
+	defer wg.Done()
+	// 遍历：
+	for v := range intChan {
+		fmt.Println("读取的数据为：", v)
+		time.Sleep(time.Second)
+	}
+}
+
+func main() { // 主线程
+	// 写协程和读协程共同操作同一个管道
+	intChan := make(chan int, 10)
+
+	wg.Add(2)
+	// 开启读和写的协程
+	go writeData(intChan)
+	go readData(intChan)
+
+	wg.Wait()
+}
+```
+
+##### select 功能
+
+> 示例：[demo13.go](./demo13.go)
+
+用于解决多个管道的选择问题，也可以叫做多路复用，可以从多个管道中随机公开地选择一个来执行
+
+> case后面必须进行的是io操作，不能是等值，随机去选择一个io操作。
+>
+> default防止select被阻塞住，加入default
+
+```go
+	select {
+		case v := <- intChan :
+			fmt.Println("intChan: ", v)
+		case v := <- strChan :
+			fmt.Println("strChan: ", v)
+		default:
+			fmt.Println("防止select被阻塞")
+	}
+```
+
+### 协程(goroutine)和管道(channel)协同工作案例
+
+> 示例：[demo10.go](./demo10.go)
+
+<img src="https://raw.githubusercontent.com/strivelen/strivelen/main/learn-go/images/image-20240404112604620.png" alt="image-20240404112604620" style="zoom: 67%;" />
+
+```go
+package main
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+var wg sync.WaitGroup
+
+// 写：
+func writeData(intChan chan int) {
+	defer wg.Done()
+	for i := 0; i < 50; i++ {
+		intChan<- i
+		fmt.Println("写入的数据为: ", i)
+		time.Sleep(time.Second)
+	}
+
+	// 管道关闭
+	close(intChan)
+}
+
+// 读：
+func readData(intChan chan int) {
+	defer wg.Done()
+	// 遍历：
+	for v := range intChan {
+		fmt.Println("读取的数据为：", v)
+		time.Sleep(time.Second)
+	}
+}
+
+func main() { // 主线程
+	// 写协程和读协程共同操作同一个管道
+	intChan := make(chan int, 50)
+
+	wg.Add(2)
+	// 开启读和写的协程
+	go writeData(intChan)
+	go readData(intChan)
+
+	wg.Wait()
+}
+```
+
+### defer+recover 机制处理错误
+
+> 示例：[demo14.go](./demo14.go)
+
+问题原因：多个协程工作，其中一个协程出现panic，导致程序崩溃
+
+解决办法：利用 refer + recover 捕获panic进行处理，即使协程出现问题，主线程仍然不受影响可以继续执行
+
+```go
+package main
+import (
+	"fmt"
+	"time"
+)
+
+// 输出数字：
+func printNum() {
+	for i := 1; i <= 10; i++ {
+		fmt.Println(i)
+	}
+}
+
+// 做除法操作
+func devide() {
+	defer func(){
+		err := recover()
+		if err != nil {
+			fmt.Println("devide出现错误：", err)
+		}
+	}()
+	num1 := 10
+	num2 := 0 // panic: runtime error: integer divide by zero
+	result := num1 / num2
+	fmt.Println(result)
+}
+
+func main() {
+	go printNum()
+	go devide()
+
+	time.Sleep(time.Second * 3)
+}
+```
+
