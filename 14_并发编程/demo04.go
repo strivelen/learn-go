@@ -78,6 +78,6 @@ func main() { // 主线程
 
 	wg.Wait()
 	for val := range intChan {
-		fmt.Println(val)
+		fmt.Println("等待完成：",val)
 	}
 }
