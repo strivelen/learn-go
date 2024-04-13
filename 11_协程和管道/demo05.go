@@ -1,11 +1,14 @@
 package main
+
 import (
 	"fmt"
 	"sync"
 )
+
 var wg sync.WaitGroup // 只定义无需赋值
 // 定义一个变量
 var n int
+
 // 加入互斥锁
 var lock sync.Mutex
 
@@ -79,7 +82,6 @@ func main() {
 // 	wg.Wait()
 // 	fmt.Println("结果：", counter.count)
 // }
-
 
 // 示例二：
 // package main

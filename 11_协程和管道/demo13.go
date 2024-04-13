@@ -1,4 +1,5 @@
 package main
+
 import (
 	"fmt"
 	"time"
@@ -9,7 +10,7 @@ func main() {
 	intChan := make(chan int, 1)
 
 	go func() {
-		time.Sleep(time.Second * 15)
+		time.Sleep(time.Second * 5)
 		intChan <- 10
 	}()
 
@@ -24,11 +25,12 @@ func main() {
 	// fmt.Println(<-strChan)
 
 	select {
-		case v := <- intChan :
-			fmt.Println("intChan: ", v)
-		case v := <- strChan :
-			fmt.Println("strChan: ", v)
-		default:
-			fmt.Println("防止select被阻塞")
+	case v := <-intChan:
+		fmt.Println("intChan: ", v)
+	case v := <-strChan:
+		fmt.Println("strChan: ", v)
+		// default:
+		// 	fmt.Println("防止select被阻塞") // 放开就不等了，直接走这里
 	}
+	fmt.Println("主线程执行完成")
 }

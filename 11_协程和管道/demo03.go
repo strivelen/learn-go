@@ -1,8 +1,10 @@
 package main
+
 import (
 	"fmt"
 	"sync"
 )
+
 var wg sync.WaitGroup // 只定义无需赋值
 // func main() {
 // 	// 启动五个协程

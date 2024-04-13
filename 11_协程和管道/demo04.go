@@ -1,8 +1,10 @@
 package main
+
 import (
 	"fmt"
 	"sync"
 )
+
 var wg sync.WaitGroup // 只定义无需赋值
 // 定义一个变量
 var n int
@@ -27,4 +29,5 @@ func main() {
 	go sub()
 	wg.Wait()
 	fmt.Println(n) // 99998
+	// 执行结果不是正确值：0，看demo05.go
 }

@@ -1,4 +1,5 @@
 package main
+
 import (
 	"fmt"
 )
@@ -13,12 +14,12 @@ func main() {
 	fmt.Printf("intChan 的值：%v \n", intChan) // intChan 的值：0xc00010a080
 
 	// 向管道存放数据：
-	intChan<- 10
+	intChan <- 10
 	num := 20
-	intChan<- num
-	intChan<- 40
+	intChan <- num
+	intChan <- 40
 	// 注意：不能存放大于容量的数据：
-	// intChan<- 80
+	// intChan <- 80
 
 	// 在管道中读取数据：
 	num1 := <-intChan

@@ -1,4 +1,5 @@
 package main
+
 import (
 	"fmt"
 	"sync"
@@ -10,7 +11,7 @@ var lock sync.RWMutex
 
 var wg sync.WaitGroup
 
-func read(){
+func read() {
 	defer wg.Done()
 	lock.RLock() // 如果只是读数据，那么这个锁不产生影响，但是读写同时发生的时候，就会产生影响
 	fmt.Println("开始读取数据")
@@ -27,7 +28,6 @@ func write() {
 	fmt.Println("写入成功")
 	lock.Unlock()
 }
-
 
 func main() {
 	wg.Add(6)

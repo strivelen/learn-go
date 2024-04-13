@@ -1,4 +1,5 @@
 package main
+
 import (
 	"fmt"
 	"sync"
@@ -11,7 +12,7 @@ var wg sync.WaitGroup
 func writeData(intChan chan int) {
 	defer wg.Done()
 	for i := 0; i < 10; i++ {
-		intChan<- i
+		intChan <- i
 		fmt.Println("写入的数据为: ", i)
 		// time.Sleep(time.Second)
 	}
